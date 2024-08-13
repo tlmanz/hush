@@ -118,7 +118,7 @@ age: **
 ```
 Custom Options Example:
 Debug: true
-Email: This is a test for masking tl********************** email address
+Email: This is a test for masking jo**************** email address
 SecretKey: verysecret
 ```
 
