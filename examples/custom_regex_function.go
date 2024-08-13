@@ -30,7 +30,7 @@ func maskEmail(input string) string {
 
 func main() {
 	config := PersonConfig{
-		Email:     "This is a test for masking tlmannapperuma@gmail.com email address",
+		Email:     "This is a test for masking john.doe@gmail.com email address",
 		SecretKey: "verysecret",
 		Debug:     true,
 	}
