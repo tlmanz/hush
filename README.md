@@ -5,7 +5,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/tlmanz/hush)](https://goreportcard.com/report/github.com/tlmanz/hush)
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/tlmanz/hush)
 
-# Hush ![hush_logo](./docs/images/logo.png)
+# Hush ![hush_logo](https://mannapperuma.com/files/hush.png)
 
 Hush is a Go package that provides a flexible and efficient way to process and mask sensitive data in structs and strings.
 
