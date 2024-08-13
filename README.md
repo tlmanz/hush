@@ -159,6 +159,7 @@ Check out the `examples` folder for more detailed usage examples:
 - `custom_options.go`: Shows how to use custom options like separators and masking functions
 - `complex_struct.go`: Illustrates handling of complex structs with nested fields, slices, and maps
 - `custom_options_table.go`: Shows how to use custom options like separators and masking functions and display the result in a table
+- `custom_regex_function.go`: Shows how to use a custom regex function to mask the data
 - `private_fields.go`: Shows how to include private fields in the output
 
 To run an example:
