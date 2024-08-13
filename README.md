@@ -11,7 +11,7 @@ Hush is a Go package that provides a flexible and efficient way to process and m
 
 ## Features
 
-- Process structs and strings to mask or hide sensitive information
+- Process structs and strings etc to mask or hide sensitive information
 - Customizable field separators for nested structures
 - Support for custom masking functions
 - Concurrent processing of struct fields for improved performance
@@ -35,48 +35,73 @@ Here's a basic example of how to use Hush:
 package main
 
 import (
-    "context"
-    "fmt"
-    "github.com/tlmanz/hush"
+	"context"
+	"fmt"
+
+	"github.com/tlmanz/hush"
 )
 
 type User struct {
-    Name     string            `hush:"mask"`
-    Password string            `hush:"hide"`
-    Age      int
-    Metadata map[string]string
+	Name     string
+	Password string `hush:"hide"`
+	Age      int    `hush:"mask"`
+	Email    string `hush:"mask"`
 }
 
 func main() {
-    user := User{
-        Name:     "John Doe",
-        Password: "secret123",
-        Age:      30,
-        Metadata: map[string]string{"key1": "value1", "key2": "value2"},
-    }
+	user := User{
+		Name:     "John",
+		Password: "secret123",
+		Age:      30,
+		Email:    "john@example.com",
+	}
 
-    husher, err := hush.NewHush(user)
-    if err != nil {
-        panic(err)
-    }
+	husher := hush.NewHush()
 
-    result, err := husher.Hush(context.Background(), "")
-    if err != nil {
-        panic(err)
-    }
+	result, err := husher.Hush(context.Background(), 10, "TESTFIELD", hush.TagHide)
+	if err != nil {
+		panic(err)
+	}
 
-    for _, field := range result {
-        fmt.Printf("%s: %s\n", field[0], field[1])
-    }
+	fmt.Println("\nString Usage Example (With Prefix):")
+	for _, field := range result {
+		fmt.Printf("%s: %s\n", field[0], field[1])
+	}
+
+	result, err = husher.Hush(context.Background(), 10, hush.TagHide)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("\nString Usage Example:")
+	for _, field := range result {
+		fmt.Printf("%s\n", field[0])
+	}
+
+	result, err = husher.Hush(context.Background(), user)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("\nStruct Usage Example:")
+	for _, field := range result {
+		fmt.Printf("%s: %s\n", field[0], field[1])
+	}
 }
 ```
 
 This will output:
 ```
-Age: 30
-Metadata[key1]: value1
-Metadata[key2]: value2
-Name: Jo******oe
+String Usage Example (With Prefix):
+TESTFIELD: HIDDEN
+
+String Usage Example:
+HIDDEN
+
+Struct Usage Example:
+Age: **
+Email: jo************om
+Name: John
 Password: HIDDEN
 ```
 
@@ -88,16 +113,25 @@ Hush provides several options to customize its behavior:
 - `WithMaskFunc(f func(string) string)`: Set a custom masking function
 - `WithPrivateFields(include bool)`: Include or exclude private fields in the output
 
-Example:
+There are also options we can use specific to Non Composite types like strings, maps, slices, etc.
+
+- `prefix string`: Set a prefix for the field name
+- `maskType hush.HushType (hush.TagMask or hush.TagHide)`: Set the type of masking to be applied. By default it will return the value as is.
+
+Examples:
 
 ```go
-result, err := husher.Hush(context.Background(), "",
+result, err := husher.Hush(context.Background(), data,
     hush.WithSeparator("_"),
     hush.WithPrivateFields(true),
     hush.WithMaskFunc(func(s string) string {
         return "CUSTOM_MASKED"
     }),
 )
+```
+
+```go
+result, err := husher.Hush(context.Background(), "johndoe@mail.com", "EMAIL", hush.TagMask)
 ```
 
 ## Private Fields
@@ -131,6 +165,10 @@ To run an example:
 
 ```
 go run examples/basic_usage.go
+go run examples/custom_options.go
+go run examples/complex_struct.go
+go run examples/custom_options_table.go
+go run examples/private_fields.go
 ```
 
 ## License

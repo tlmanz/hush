@@ -7,6 +7,7 @@ import (
 )
 
 func TestProcessField(t *testing.T) {
+	ht := &hushType{}
 	opts := &hushOptions{
 		separator:      ".",
 		maskFunc:       defaultMaskFunc,
@@ -41,7 +42,7 @@ func TestProcessField(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := processField(context.Background(), tt.fieldName, tt.field, reflect.ValueOf(tt.value), tt.opts)
+			got, err := ht.processValue(context.Background(), tt.fieldName, tt.field, reflect.ValueOf(tt.value), tt.opts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processField() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -54,6 +55,7 @@ func TestProcessField(t *testing.T) {
 }
 
 func TestProcessSimpleField(t *testing.T) {
+	ht := &hushType{}
 	tests := []struct {
 		name      string
 		fieldName string
@@ -77,7 +79,7 @@ func TestProcessSimpleField(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := processSimpleField(tt.fieldName, tt.field, reflect.ValueOf(tt.value), tt.hushTag, tt.opts)
+			got, err := ht.processSimpleField(tt.fieldName, tt.field, reflect.ValueOf(tt.value), tt.hushTag, tt.opts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processSimpleField() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -110,7 +112,7 @@ func TestProcessString(t *testing.T) {
 			name:      "Mask tag",
 			fieldName: "field2",
 			value:     "sensitive",
-			hushTag:   TagMask,
+			hushTag:   string(TagMask),
 			opts:      &hushOptions{maskFunc: func(s string) string { return "***" }},
 			want:      [][]string{{"field2", "***"}},
 		},
