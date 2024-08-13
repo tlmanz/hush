@@ -170,6 +170,7 @@ go run examples/custom_options.go
 go run examples/complex_struct.go
 go run examples/custom_options_table.go
 go run examples/private_fields.go
+go run examples/custom_regex_function.go
 ```
 
 ## License
