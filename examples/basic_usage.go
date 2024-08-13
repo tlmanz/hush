@@ -29,7 +29,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("\nString Usage Example (With Prefix):")
+	fmt.Println("String Usage Example (With Prefix):")
 	for _, field := range result {
 		fmt.Printf("%s: %s\n", field[0], field[1])
 	}
