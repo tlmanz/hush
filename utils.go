@@ -1,6 +1,8 @@
 package hush
 
-import "strings"
+import (
+	"strings"
+)
 
 func buildFieldName(prefix, fieldName, separator string) string {
 	if prefix == "" {

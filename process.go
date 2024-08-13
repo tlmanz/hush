@@ -5,43 +5,99 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"sync"
 )
 
 // processField is the main function for processing individual fields.
 // It handles different types of fields (struct, pointer, slice, map, etc.) and applies the appropriate masking.
-func processField(ctx context.Context, fieldName string, field reflect.StructField, value reflect.Value, opts *hushOptions) ([][]string, error) {
+func (ht *hushType) processValue(ctx context.Context, fieldName string, field reflect.StructField, value reflect.Value, opts *hushOptions) ([][]string, error) {
 	hushTag := field.Tag.Get("hush")
 
-	// Check if the field is unexported and handle accordingly
 	if field.PkgPath != "" && !opts.includePrivate {
 		return nil, nil // Skip unexported fields when not including private fields
 	}
 
 	switch value.Kind() {
 	case reflect.Struct:
-		nestedHush := hushType{value: value, isStr: false}
-		nestedOpts := &hushOptions{
-			separator:      opts.separator,
-			maskFunc:       opts.maskFunc,
-			includePrivate: opts.includePrivate,
-		}
-		return nestedHush.Hush(ctx, fieldName, WithOptions(nestedOpts))
+		return ht.processStruct(ctx, value, fieldName, opts)
 	case reflect.Ptr:
 		if value.IsNil() {
 			return [][]string{{fieldName, "nil"}}, nil
 		}
-		return processField(ctx, fieldName, reflect.StructField{}, value.Elem(), opts)
+		return ht.processValue(ctx, fieldName, reflect.StructField{}, value.Elem(), opts)
 	case reflect.Slice, reflect.Array:
-		return processSliceOrArray(ctx, fieldName, value, opts)
+		return ht.processSliceOrArray(ctx, fieldName, value, opts)
 	case reflect.Map:
-		return processMap(ctx, fieldName, value, opts)
+		return ht.processMap(ctx, fieldName, value, opts)
 	default:
-		return processSimpleField(fieldName, field, value, hushTag, opts)
+		return ht.processSimpleField(fieldName, field, value, hushTag, opts)
 	}
 }
 
+// processStruct handles the processing of struct fields.
+func (ht *hushType) processStruct(ctx context.Context, rv reflect.Value, prefix string, opts *hushOptions) ([][]string, error) {
+	data := make([][]string, 0, rv.NumField())
+	errChan := make(chan error, rv.NumField())
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	t := rv.Type()
+
+	for i := 0; i < rv.NumField(); i++ {
+		field := t.Field(i)
+		value := rv.Field(i)
+
+		if !opts.includePrivate && !field.IsExported() {
+			continue
+		}
+
+		wg.Add(1)
+		go func(field reflect.StructField, value reflect.Value) {
+			defer wg.Done()
+
+			select {
+			case <-ctx.Done():
+				errChan <- ctx.Err()
+				return
+			default:
+			}
+
+			fieldName := buildFieldName(prefix, field.Name, opts.separator)
+
+			result, err := ht.processValue(ctx, fieldName, field, value, opts)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			mu.Lock()
+			data = append(data, result...)
+			mu.Unlock()
+		}(field, value)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	var firstErr error
+	for err := range errChan {
+		firstErr = err
+		break
+	}
+
+	if firstErr != nil {
+		return nil, firstErr
+	}
+
+	sort.Slice(data, func(i, j int) bool {
+		return data[i][0] < data[j][0]
+	})
+
+	return data, nil
+}
+
 // processSimpleField handles the processing of simple (non-composite) fields.
-func processSimpleField(fieldName string, field reflect.StructField, value reflect.Value, hushTag string, opts *hushOptions) ([][]string, error) {
+func (ht *hushType) processSimpleField(fieldName string, field reflect.StructField, value reflect.Value, hushTag string, opts *hushOptions) ([][]string, error) {
 	if field.PkgPath != "" {
 		// This is an unexported field
 		if opts.includePrivate {
@@ -52,7 +108,6 @@ func processSimpleField(fieldName string, field reflect.StructField, value refle
 
 	// For exported fields, use Interface() as before
 	return processNonComposite(fieldName, value, hushTag, opts)
-
 }
 
 func processNonComposite(fieldName string, value reflect.Value, hushTag string, opts *hushOptions) ([][]string, error) {
@@ -62,15 +117,20 @@ func processNonComposite(fieldName string, value reflect.Value, hushTag string, 
 
 // processString applies the masking function to string values if needed.
 func processString(fieldName, value, hushTag string, opts *hushOptions) [][]string {
-	if hushTag == "" {
-		return [][]string{{fieldName, value}}
+	if opts.hushType != "" {
+		hushTag = string(opts.hushType)
 	}
-	if hushTag == TagHide {
-		return [][]string{{fieldName, HiddenValue}}
+
+	if hushTag == string(TagHide) {
+		value = HiddenValue
+	} else if hushTag == string(TagMask) && opts.maskFunc != nil {
+		value = opts.maskFunc(value)
 	}
-	if (hushTag == TagMask && opts.maskFunc != nil) || (opts.includePrivate && opts.maskFunc != nil) {
-		return [][]string{{fieldName, opts.maskFunc(value)}}
+
+	if fieldName == "" {
+		return [][]string{{value}}
 	}
+
 	return [][]string{{fieldName, value}}
 }
 
@@ -88,7 +148,7 @@ func convertNonCompositeToString(value reflect.Value) string {
 }
 
 // processSliceOrArray handles the processing of slice or array fields.
-func processSliceOrArray(ctx context.Context, fieldName string, value reflect.Value, opts *hushOptions) ([][]string, error) {
+func (ht *hushType) processSliceOrArray(ctx context.Context, fieldName string, value reflect.Value, opts *hushOptions) ([][]string, error) {
 	var result [][]string
 	for i := 0; i < value.Len(); i++ {
 		select {
@@ -99,7 +159,7 @@ func processSliceOrArray(ctx context.Context, fieldName string, value reflect.Va
 		elemFieldName := fmt.Sprintf("%s[%d]", fieldName, i)
 		elemValue := value.Index(i)
 
-		elemResult, err := processField(ctx, elemFieldName, reflect.StructField{}, elemValue, opts)
+		elemResult, err := ht.processValue(ctx, elemFieldName, reflect.StructField{}, elemValue, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -109,7 +169,7 @@ func processSliceOrArray(ctx context.Context, fieldName string, value reflect.Va
 }
 
 // processMap handles the processing of map fields.
-func processMap(ctx context.Context, fieldName string, value reflect.Value, opts *hushOptions) ([][]string, error) {
+func (ht *hushType) processMap(ctx context.Context, fieldName string, value reflect.Value, opts *hushOptions) ([][]string, error) {
 	result := make([][]string, 0, value.Len())
 	for _, key := range value.MapKeys() {
 		select {
@@ -122,7 +182,7 @@ func processMap(ctx context.Context, fieldName string, value reflect.Value, opts
 		mapFieldName := fieldName + "[" + keyStr + "]"
 		fieldValue := value.MapIndex(key)
 
-		processedValue, err := processField(ctx, mapFieldName, reflect.StructField{}, fieldValue, opts)
+		processedValue, err := ht.processValue(ctx, mapFieldName, reflect.StructField{}, fieldValue, opts)
 		if err != nil {
 			return nil, err
 		}

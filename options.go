@@ -8,6 +8,8 @@ type hushOptions struct {
 	separator      string
 	maskFunc       func(string) string
 	includePrivate bool
+	prefix         string
+	hushType       HushType
 }
 
 // WithSeparator sets the separator used for nested field names.
