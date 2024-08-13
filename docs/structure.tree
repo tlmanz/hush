@@ -1,0 +1,27 @@
+📦hush
+ ┣ 📂.github
+ ┃ ┣ 📂workflows
+ ┃ ┃ ┣ 📜ci.yml
+ ┃ ┃ ┗ 📜codequality.yml
+ ┃ ┗ 📜dependabot.yml
+ ┣ 📂.vscode
+ ┃ ┗ 📜settings.json
+ ┣ 📂Examples
+ ┃ ┣ 📜basic_usage.go
+ ┃ ┣ 📜complex_struct.go
+ ┃ ┗ 📜custom_options.go
+ ┣ 📜.gitignore
+ ┣ 📜LICENSE
+ ┣ 📜README.md
+ ┣ 📜cover.out
+ ┣ 📜go.mod
+ ┣ 📜hush.go
+ ┣ 📜hush_test.go
+ ┣ 📜husher.go
+ ┣ 📜husher_test.go
+ ┣ 📜options.go
+ ┣ 📜options_test.go
+ ┣ 📜process.go
+ ┣ 📜process_test.go
+ ┣ 📜utils.go
+ ┗ 📜utils_test.go
