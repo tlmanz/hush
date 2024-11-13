@@ -159,3 +159,177 @@ func TestConvertNonCompositeToString(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessSliceOrArray(t *testing.T) {
+	ht := &hushType{}
+	opts := &hushOptions{
+		separator: ".",
+		maskFunc:  defaultMaskFunc,
+	}
+
+	tests := []struct {
+		name      string
+		fieldName string
+		value     interface{}
+		hushTag   string
+		opts      *hushOptions
+		want      [][]string
+		wantErr   bool
+	}{
+		{
+			name:      "Basic String Slice",
+			fieldName: "strings",
+			value:     []string{"hello", "world"},
+			hushTag:   "",
+			opts:      opts,
+			want:      [][]string{{"strings[0]", "hello"}, {"strings[1]", "world"}},
+			wantErr:   false,
+		},
+		{
+			name:      "Basic Int Slice",
+			fieldName: "numbers",
+			value:     []int{1, 2, 3},
+			hushTag:   "",
+			opts:      opts,
+			want:      [][]string{{"numbers[0]", "1"}, {"numbers[1]", "2"}, {"numbers[2]", "3"}},
+			wantErr:   false,
+		},
+		{
+			name:      "Masked String Slice",
+			fieldName: "sensitive",
+			value:     []string{"password", "secret"},
+			hushTag:   "mask",
+			opts:      opts,
+			want:      [][]string{{"sensitive[0]", "pa****rd"}, {"sensitive[1]", "se**et"}},
+			wantErr:   false,
+		},
+		{
+			name:      "Complex Struct Slice",
+			fieldName: "users",
+			value: []struct {
+				Name string `hush:"mask"`
+				Age  int
+			}{
+				{"John", 30},
+				{"Alice", 25},
+			},
+			hushTag: "",
+			opts:    opts,
+			want:    [][]string{{"users[0].Age", "30"}, {"users[0].Name", "****"}, {"users[1].Age", "25"}, {"users[1].Name", "Al*ce"}},
+			wantErr: false,
+		},
+		{
+			name:      "Empty Slice",
+			fieldName: "empty",
+			value:     []string{},
+			hushTag:   "",
+			opts:      opts,
+			want:      [][]string{},
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ht.processSliceOrArray(context.Background(), tt.fieldName, reflect.ValueOf(tt.value), tt.opts, tt.hushTag)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("processSliceOrArray() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("processSliceOrArray() = %v, want %v", got, tt.want)
+				for i := range got {
+					for j := range got[i] {
+						t.Logf("got[%d][%d] = %q (len: %d)", i, j, got[i][j], len(got[i][j]))
+						if i < len(tt.want) && j < len(tt.want[i]) {
+							t.Logf("want[%d][%d] = %q (len: %d)", i, j, tt.want[i][j], len(tt.want[i][j]))
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestIsBasicTypeKind(t *testing.T) {
+	tests := []struct {
+		name string
+		kind reflect.Kind
+		want bool
+	}{
+		{"String", reflect.String, true},
+		{"Int", reflect.Int, true},
+		{"Float64", reflect.Float64, true},
+		{"Bool", reflect.Bool, true},
+		{"Struct", reflect.Struct, false},
+		{"Map", reflect.Map, false},
+		{"Slice", reflect.Slice, false},
+		{"Interface", reflect.Interface, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isBasicTypeKind(tt.kind); got != tt.want {
+				t.Errorf("isBasicTypeKind() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProcessBasicTypeSlice(t *testing.T) {
+	ht := &hushType{}
+	opts := &hushOptions{
+		maskFunc: defaultMaskFunc,
+	}
+
+	tests := []struct {
+		name      string
+		fieldName string
+		value     interface{}
+		hushTag   string
+		opts      *hushOptions
+		want      [][]string
+		wantErr   bool
+	}{
+		{
+			name:      "String Slice",
+			fieldName: "names",
+			value:     []string{"Alice", "Bob"},
+			hushTag:   "",
+			opts:      opts,
+			want:      [][]string{{"names[0]", "Alice"}, {"names[1]", "Bob"}},
+			wantErr:   false,
+		},
+		{
+			name:      "Int Slice with Mask",
+			fieldName: "ids",
+			value:     []int{123, 456},
+			hushTag:   "mask",
+			opts:      opts,
+			want:      [][]string{{"ids[0]", "***"}, {"ids[1]", "***"}},
+			wantErr:   false,
+		},
+		{
+			name:      "Float Slice",
+			fieldName: "prices",
+			value:     []float64{1.99, 2.99},
+			hushTag:   "",
+			opts:      opts,
+			want:      [][]string{{"prices[0]", "1.99"}, {"prices[1]", "2.99"}},
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ht.processBasicTypeSlice(tt.fieldName, reflect.ValueOf(tt.value), tt.opts, tt.hushTag)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("processBasicTypeSlice() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("processBasicTypeSlice() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

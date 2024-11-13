@@ -26,7 +26,7 @@ func (ht *hushType) processValue(ctx context.Context, fieldName string, field re
 		}
 		return ht.processValue(ctx, fieldName, reflect.StructField{}, value.Elem(), opts)
 	case reflect.Slice, reflect.Array:
-		return ht.processSliceOrArray(ctx, fieldName, value, opts)
+		return ht.processSliceOrArray(ctx, fieldName, value, opts, hushTag)
 	case reflect.Map:
 		return ht.processMap(ctx, fieldName, value, opts)
 	default:
@@ -148,14 +148,59 @@ func convertNonCompositeToString(value reflect.Value) string {
 }
 
 // processSliceOrArray handles the processing of slice or array fields.
-func (ht *hushType) processSliceOrArray(ctx context.Context, fieldName string, value reflect.Value, opts *hushOptions) ([][]string, error) {
-	var result [][]string
+func (ht *hushType) processSliceOrArray(ctx context.Context, fieldName string, value reflect.Value, opts *hushOptions, hushTag string) ([][]string, error) {
+	// Handle basic types more elegantly
+	if isBasicType := isBasicTypeKind(value.Type().Elem().Kind()); isBasicType {
+		return ht.processBasicTypeSlice(fieldName, value, opts, hushTag)
+	}
+
+	return ht.processComplexTypeSlice(ctx, fieldName, value, opts)
+}
+
+// Helper function to determine if a kind is a basic type
+func isBasicTypeKind(kind reflect.Kind) bool {
+	basicTypes := map[reflect.Kind]bool{
+		reflect.String:  true,
+		reflect.Bool:    true,
+		reflect.Int:     true,
+		reflect.Int8:    true,
+		reflect.Int16:   true,
+		reflect.Int32:   true,
+		reflect.Int64:   true,
+		reflect.Uint:    true,
+		reflect.Uint8:   true,
+		reflect.Uint16:  true,
+		reflect.Uint32:  true,
+		reflect.Uint64:  true,
+		reflect.Float32: true,
+		reflect.Float64: true,
+	}
+	return basicTypes[kind]
+}
+
+// Process slices of basic types
+func (ht *hushType) processBasicTypeSlice(fieldName string, value reflect.Value, opts *hushOptions, hushTag string) ([][]string, error) {
+	result := make([][]string, 0, value.Len())
+	for i := 0; i < value.Len(); i++ {
+		elemFieldName := fmt.Sprintf("%s[%d]", fieldName, i)
+		elemValue := value.Index(i)
+		convertedString := convertNonCompositeToString(elemValue)
+		elemResult := processString(elemFieldName, convertedString, hushTag, opts)
+		result = append(result, elemResult...)
+	}
+	return result, nil
+}
+
+// Process slices of complex types
+func (ht *hushType) processComplexTypeSlice(ctx context.Context, fieldName string, value reflect.Value, opts *hushOptions) ([][]string, error) {
+	result := make([][]string, 0, value.Len())
 	for i := 0; i < value.Len(); i++ {
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		default:
 		}
+
 		elemFieldName := fmt.Sprintf("%s[%d]", fieldName, i)
 		elemValue := value.Index(i)
 
