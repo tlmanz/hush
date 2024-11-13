@@ -9,17 +9,17 @@ import (
 
 type User struct {
 	Name     string
-	Password string `hush:"hide"`
-	Age      int    `hush:"mask"`
-	Email    string `hush:"mask"`
+	Password string   `hush:"hide"`
+	Ages     []int    `hush:"mask"`
+	Emails   []string `hush:"mask"`
 }
 
 func main() {
 	user := User{
 		Name:     "John",
 		Password: "secret123",
-		Age:      30,
-		Email:    "john@example.com",
+		Ages:     []int{301, 312, 323},
+		Emails:   []string{"john@example.com", "john2@example.com"},
 	}
 
 	husher := hush.NewHush()

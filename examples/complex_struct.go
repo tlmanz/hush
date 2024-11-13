@@ -25,6 +25,7 @@ type ComplexUser struct {
 	Age      int
 	Address  Address `hush:"hide"`
 	Accounts []Account
+	Secret   []string `hush:"mask"`
 	Metadata map[string]string
 	IsActive bool
 }
@@ -39,6 +40,7 @@ func main() {
 			City:    "Anytown",
 			Country: "USA",
 		},
+		Secret: []string{"secret1", "secret2"},
 		Accounts: []Account{
 			{ID: 1, Balance: 1000.50, Currency: "USD"},
 			{ID: 2, Balance: 500.75, Currency: "EUR"},
