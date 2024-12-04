@@ -15,7 +15,7 @@ type Address struct {
 
 type Account struct {
 	ID       int
-	Balance  float64 `hush:"mask"`
+	Balance  float64 `hush:"remove"`
 	Currency string
 }
 

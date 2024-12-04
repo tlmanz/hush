@@ -16,8 +16,9 @@ type hushType struct{}
 
 // Constants used throughout the package
 const (
-	TagMask HushType = "mask"
-	TagHide HushType = "hide"
+	TagMask   HushType = "mask"
+	TagHide   HushType = "hide"
+	TagRemove HushType = "remove"
 
 	DefaultSeparator = "."
 	HiddenValue      = "HIDDEN"

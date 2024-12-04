@@ -14,7 +14,7 @@ type testStruct struct {
 	PublicField  string `hush:"mask"`
 	privateField string `hush:"mask"`
 	NestedStruct nestedStruct
-	IntField     int
+	IntField     int `hush:"remove"`
 	BoolField    bool
 	FloatField   float64
 }
@@ -24,11 +24,6 @@ func TestNewHush(t *testing.T) {
 
 	if h == nil {
 		t.Error("NewHush() returned nil, want non-nil")
-	}
-
-	_, ok := h.(Husher)
-	if !ok {
-		t.Error("NewHush() did not return a Husher interface")
 	}
 }
 
@@ -54,7 +49,6 @@ func TestHushType_Hush(t *testing.T) {
 			want: [][]string{
 				{"BoolField", "true"},
 				{"FloatField", "3.14"},
-				{"IntField", "42"},
 				{"NestedStruct.NestedField", "HIDDEN"},
 				{"PublicField", "se*****ve"},
 			},
@@ -74,7 +68,6 @@ func TestHushType_Hush(t *testing.T) {
 			want: [][]string{
 				{"BoolField", "true"},
 				{"FloatField", "3.14"},
-				{"IntField", "42"},
 				{"NestedStruct.NestedField", "HIDDEN"},
 				{"PublicField", "se*****ve"},
 				{"privateField", "pr***te"},

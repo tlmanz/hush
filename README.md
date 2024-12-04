@@ -11,7 +11,7 @@ Hush is a Go package that provides a flexible and efficient way to process and m
 
 ## Features
 
-- Process structs and strings etc to mask or hide sensitive information
+- Process structs and strings etc to mask, hide or remove sensitive information
 - Customizable field separators for nested structures
 - Support for custom masking functions
 - Concurrent processing of struct fields for improved performance
@@ -43,17 +43,17 @@ import (
 
 type User struct {
 	Name     string
-	Password string `hush:"hide"`
-	Age      int    `hush:"mask"`
-	Email    string `hush:"mask"`
+	Password string   `hush:"hide"`
+	Ages     []int    `hush:"mask"`
+	Emails   []string `hush:"remove"`
 }
 
 func main() {
 	user := User{
 		Name:     "John",
 		Password: "secret123",
-		Age:      30,
-		Email:    "john@example.com",
+		Ages:     []int{301, 312, 323},
+		Emails:   []string{"john@example.com", "john2@example.com"},
 	}
 
 	husher := hush.NewHush()
@@ -63,7 +63,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("\nString Usage Example (With Prefix):")
+	fmt.Println("String Usage Example (With Prefix):")
 	for _, field := range result {
 		fmt.Printf("%s: %s\n", field[0], field[1])
 	}
@@ -99,8 +99,9 @@ String Usage Example:
 HIDDEN
 
 Struct Usage Example:
-Age: **
-Email: jo************om
+Ages[0]: ***
+Ages[1]: ***
+Ages[2]: ***
 Name: John
 Password: HIDDEN
 ```
