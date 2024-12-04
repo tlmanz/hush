@@ -21,8 +21,9 @@ String Usage Example:
 HIDDEN
 
 Struct Usage Example:
-Age: **
-Email: jo************om
+Ages[0]: ***
+Ages[1]: ***
+Ages[2]: ***
 Name: John
 Password: HIDDEN
 ```
@@ -37,10 +38,8 @@ Password: HIDDEN
 
 ```
 Complex Struct Example:
-Accounts[0].Balance: 10**.5
 Accounts[0].Currency: USD
 Accounts[0].ID: 1
-Accounts[1].Balance: 50**75
 Accounts[1].Currency: EUR
 Accounts[1].ID: 2
 Address.City: Anytown
@@ -52,6 +51,8 @@ IsActive: true
 Metadata[lastLogin]: 2023-04-01
 Metadata[role]: admin
 Name: Al*********on
+Secret[0]: se***t1
+Secret[1]: se***t2
 ```
 
 ### 3. Custom Options

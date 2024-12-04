@@ -35,6 +35,7 @@ func TestProcessField(t *testing.T) {
 		}{"John"}, opts, [][]string{{"ptr.Name", "HIDDEN"}}, false},
 		{"Nil Pointer", "ptr", reflect.StructField{}, (*struct{ Name string })(nil), opts, [][]string{{"ptr", "nil"}}, false},
 		{"Hidden Field", "hidden", reflect.StructField{Tag: reflect.StructTag(`hush:"hide"`)}, "secret", opts, [][]string{{"hidden", "HIDDEN"}}, false},
+		{"Removed Field", "removed", reflect.StructField{Tag: reflect.StructTag(`hush:"remove"`)}, "secret", opts, nil, false},
 		{"Private Field", "private", reflect.StructField{PkgPath: "main"}, "private", opts, nil, false},
 		{"Private Field Included", "private", reflect.StructField{Tag: reflect.StructTag(`hush:"mask"`), PkgPath: "main"}, "private", &hushOptions{includePrivate: true, maskFunc: defaultMaskFunc}, [][]string{{"private", "pr***te"}}, false},
 		{"Float", "price", reflect.StructField{}, 3.14, opts, [][]string{{"price", "3.14"}}, false},

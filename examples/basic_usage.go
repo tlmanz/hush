@@ -11,7 +11,7 @@ type User struct {
 	Name     string
 	Password string   `hush:"hide"`
 	Ages     []int    `hush:"mask"`
-	Emails   []string `hush:"mask"`
+	Emails   []string `hush:"remove"`
 }
 
 func main() {

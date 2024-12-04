@@ -17,6 +17,10 @@ func (ht *hushType) processValue(ctx context.Context, fieldName string, field re
 		return nil, nil // Skip unexported fields when not including private fields
 	}
 
+	if hushTag == string(TagRemove) {
+		return nil, nil
+	}
+
 	switch value.Kind() {
 	case reflect.Struct:
 		return ht.processStruct(ctx, value, fieldName, opts)
