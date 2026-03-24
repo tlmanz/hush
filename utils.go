@@ -12,9 +12,10 @@ func buildFieldName(prefix, fieldName, separator string) string {
 }
 
 func defaultMaskFunc(value string) string {
-	length := len(value)
-	if length <= 4 {
+	runes := []rune(value)
+	length := len(runes)
+	if length <= 8 {
 		return strings.Repeat("*", length)
 	}
-	return value[:2] + strings.Repeat("*", length-4) + value[length-2:]
+	return string(runes[:1]) + strings.Repeat("*", length-2) + string(runes[length-1:])
 }

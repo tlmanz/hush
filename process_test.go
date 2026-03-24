@@ -23,7 +23,7 @@ func TestProcessField(t *testing.T) {
 		want      [][]string
 		wantErr   bool
 	}{
-		{"String", "test", reflect.StructField{Tag: reflect.StructTag(`hush:"mask"`)}, "sensitive", opts, [][]string{{"test", "se*****ve"}}, false},
+		{"String", "test", reflect.StructField{Tag: reflect.StructTag(`hush:"mask"`)}, "sensitive", opts, [][]string{{"test", "s*******e"}}, false},
 		{"Int", "number", reflect.StructField{}, 42, opts, [][]string{{"number", "42"}}, false},
 		{"Slice", "slice", reflect.StructField{}, []string{"a", "b"}, opts, [][]string{{"slice[0]", "a"}, {"slice[1]", "b"}}, false},
 		{"Map", "map", reflect.StructField{}, map[string]int{"a": 1, "b": 2}, opts, [][]string{{"map[a]", "1"}, {"map[b]", "2"}}, false},
@@ -37,13 +37,13 @@ func TestProcessField(t *testing.T) {
 		{"Hidden Field", "hidden", reflect.StructField{Tag: reflect.StructTag(`hush:"hide"`)}, "secret", opts, [][]string{{"hidden", "HIDDEN"}}, false},
 		{"Removed Field", "removed", reflect.StructField{Tag: reflect.StructTag(`hush:"remove"`)}, "secret", opts, nil, false},
 		{"Private Field", "private", reflect.StructField{PkgPath: "main"}, "private", opts, nil, false},
-		{"Private Field Included", "private", reflect.StructField{Tag: reflect.StructTag(`hush:"mask"`), PkgPath: "main"}, "private", &hushOptions{includePrivate: true, maskFunc: defaultMaskFunc}, [][]string{{"private", "pr***te"}}, false},
+		{"Private Field Included", "private", reflect.StructField{Tag: reflect.StructTag(`hush:"mask"`), PkgPath: "main"}, "private", &hushOptions{includePrivate: true, maskFunc: defaultMaskFunc}, [][]string{{"private", "*******"}}, false},
 		{"Float", "price", reflect.StructField{}, 3.14, opts, [][]string{{"price", "3.14"}}, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ht.processValue(context.Background(), tt.fieldName, tt.field, reflect.ValueOf(tt.value), tt.opts)
+			got, err := ht.processValue(context.Background(), tt.fieldName, tt.field, reflect.ValueOf(tt.value), tt.opts, "", 0)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processField() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -72,9 +72,9 @@ func TestProcessSimpleField(t *testing.T) {
 		{"Exported Bool", "active", reflect.StructField{}, true, "", &hushOptions{}, [][]string{{"active", "true"}}, false},
 		{"Exported Float", "price", reflect.StructField{}, 3.14, "hide", &hushOptions{}, [][]string{{"price", "HIDDEN"}}, false},
 		{"Unexported Int", "age", reflect.StructField{PkgPath: "main"}, 30, "", &hushOptions{includePrivate: true}, [][]string{{"age", "30"}}, false},
-		{"Unexported String", "secret", reflect.StructField{PkgPath: "main"}, "secret", "mask", &hushOptions{includePrivate: true, maskFunc: defaultMaskFunc}, [][]string{{"secret", "se**et"}}, false},
+		{"Unexported String", "secret", reflect.StructField{PkgPath: "main"}, "secret", "mask", &hushOptions{includePrivate: true, maskFunc: defaultMaskFunc}, [][]string{{"secret", "******"}}, false},
 		{"Unexported Bool", "isAdmin", reflect.StructField{PkgPath: "main"}, false, "", &hushOptions{includePrivate: true}, [][]string{{"isAdmin", "false"}}, false},
-		{"Unexported Float", "salary", reflect.StructField{PkgPath: "main"}, 50000.50, "mask", &hushOptions{includePrivate: true, maskFunc: defaultMaskFunc}, [][]string{{"salary", "50***.5"}}, false},
+		{"Unexported Float", "salary", reflect.StructField{PkgPath: "main"}, 50000.50, "mask", &hushOptions{includePrivate: true, maskFunc: defaultMaskFunc}, [][]string{{"salary", "*******"}}, false},
 		{"Unexported Skipped", "skipped", reflect.StructField{PkgPath: "main"}, "skip me", "", &hushOptions{}, nil, false},
 	}
 
@@ -201,7 +201,7 @@ func TestProcessSliceOrArray(t *testing.T) {
 			value:     []string{"password", "secret"},
 			hushTag:   "mask",
 			opts:      opts,
-			want:      [][]string{{"sensitive[0]", "pa****rd"}, {"sensitive[1]", "se**et"}},
+			want:      [][]string{{"sensitive[0]", "********"}, {"sensitive[1]", "******"}},
 			wantErr:   false,
 		},
 		{
@@ -216,7 +216,7 @@ func TestProcessSliceOrArray(t *testing.T) {
 			},
 			hushTag: "",
 			opts:    opts,
-			want:    [][]string{{"users[0].Age", "30"}, {"users[0].Name", "****"}, {"users[1].Age", "25"}, {"users[1].Name", "Al*ce"}},
+			want:    [][]string{{"users[0].Age", "30"}, {"users[0].Name", "****"}, {"users[1].Age", "25"}, {"users[1].Name", "*****"}},
 			wantErr: false,
 		},
 		{
@@ -232,7 +232,7 @@ func TestProcessSliceOrArray(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ht.processSliceOrArray(context.Background(), tt.fieldName, reflect.ValueOf(tt.value), tt.opts, tt.hushTag)
+			got, err := ht.processSliceOrArray(context.Background(), tt.fieldName, reflect.ValueOf(tt.value), tt.opts, tt.hushTag, 0)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processSliceOrArray() error = %v, wantErr %v", err, tt.wantErr)
 				return

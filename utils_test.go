@@ -31,8 +31,8 @@ func TestDefaultMaskFunc(t *testing.T) {
 		want  string
 	}{
 		{"Short string", "abc", "***"},
-		{"Medium string", "password", "pa****rd"},
-		{"Long string", "loooooooooooooooooooong", "lo*******************ng"},
+		{"Medium string", "password", "********"},
+		{"Long string", "loooooooooooooooooooong", "l*********************g"},
 	}
 
 	for _, tt := range tests {

@@ -54,5 +54,5 @@ func (ht *hushType) Hush(ctx context.Context, v interface{}, args ...interface{}
 		rv = rv.Elem()
 	}
 
-	return ht.processValue(ctx, opts.prefix, reflect.StructField{}, rv, opts)
+	return ht.processValue(ctx, opts.prefix, reflect.StructField{}, rv, opts, "", 0)
 }
